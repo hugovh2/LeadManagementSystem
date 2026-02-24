@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: leadsmanager-sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong@Password123
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - leadsmanager-network
+
+  api:
+    build:
+      context: .
+      dockerfile: LeadsManager.API/Dockerfile
+    container_name: leadsmanager-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=LeadsManagerDB;User Id=sa;Password=YourStrong@Password123;TrustServerCertificate=True
+    ports:
+      - "5000:80"
+    depends_on:
+      - sqlserver
+    networks:
+      - leadsmanager-network
+
+  frontend:
+    build:
+      context: ./leads-front-web
+      dockerfile: Dockerfile
+    container_name: leadsmanager-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    networks:
+      - leadsmanager-network
+
+volumes:
+  sqlserver_data:
+
+networks:
+  leadsmanager-network:
+    driver: bridge
